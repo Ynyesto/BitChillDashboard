@@ -63,6 +63,19 @@ function App() {
                 </div>
                 <div className="value-medium">${item.tvlUsd.toFixed(2)}</div>
               </div>
+              {item.interestWithdrawn !== undefined && item.name.toLowerCase().includes('tropykus') &&  (
+                <div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+                    Interest withdrawn by users
+                  </div>
+                  <div className="value-medium" style={{ color: item.interestWithdrawn > 0 ? '#ff6b6b' : '#51cf66' }}>
+                    ${item.interestWithdrawn.toFixed(2)}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                    {item.interestWithdrawn > 0 ? 'Deposit needed' : 'No deposit needed'}
+                  </div>
+                </div>
+              )}
             </div>
             <details>
               <summary>Contract Addresses</summary>
