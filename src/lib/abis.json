@@ -1,0 +1,22 @@
+{
+  "erc20": [
+    { "constant": true, "inputs": [{"name":"","type":"address"}], "name": "balanceOf", "outputs": [{"name":"","type":"uint256"}], "stateMutability": "view", "type": "function" }
+  ],
+  "iSusd": [
+    { "inputs": [{"name":"","type":"address"}], "name": "assetBalanceOf", "outputs": [{"type":"int256"}], "stateMutability": "view", "type": "function" },
+    { "inputs": [{"name":"","type":"address"}], "name": "profitOf", "outputs": [{"type":"int256"}], "stateMutability": "view", "type": "function" }
+  ],
+  "kToken": [
+    { "inputs": [{"name":"","type":"address"}], "name": "balanceOf", "outputs": [
+      {"type":"uint256"}
+    ], "stateMutability": "nonpayable", "type": "function" },
+    { "inputs": [{"name":"","type":"address"}], "name": "balanceOfUnderlying", "outputs": [
+      {"type":"uint256"}
+    ], "stateMutability": "nonpayable", "type": "function" },
+    { "inputs": [], "name": "exchangeRateStored", "outputs": [
+      {"type":"uint256"}
+    ], "stateMutability": "view", "type": "function" }
+  ]
+}
+
+
