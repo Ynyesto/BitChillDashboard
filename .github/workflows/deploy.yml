@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+# Allow the action to create and use deployments
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
