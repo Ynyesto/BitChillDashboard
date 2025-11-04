@@ -6,7 +6,8 @@ let rpcUrl = import.meta.env.VITE_RPC_URL as string | undefined
 if (!rpcUrl) {
   // eslint-disable-next-line no-console
   console.warn('VITE_RPC_URL not set. Using public RPC URL.')
-  rpcUrl = 'https://rootstock-mainnet.public.blastapi.io'
+  // rpcUrl = 'https://rootstock-mainnet.public.blastapi.io'
+  rpcUrl = 'https://rootstock.rpc.thirdweb.com'
 }
 
 export const publicClient: PublicClient = createPublicClient({
