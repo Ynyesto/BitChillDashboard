@@ -19,6 +19,9 @@
     { "inputs": [{"name":"","type":"address"}], "name": "getSupplierSnapshotStored", "outputs": [
       {"type":"uint256"}, {"type":"uint256"}, {"type":"uint256"}, {"type":"uint256"}
     ], "stateMutability": "nonpayable", "type": "function" }
+  ],
+  "oracle": [
+    { "inputs": [], "name": "getPrice", "outputs": [{"type":"uint256"}], "stateMutability": "view", "type": "function" }
   ]
 }
 

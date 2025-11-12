@@ -16,6 +16,13 @@ export const TOKENS = {
   kUSDRIF: '0xDdf3CE45fcf080DF61ee61dac5Ddefef7ED4F46C',
 } as const
 
+// Operational addresses
+export const ADDRESSES = {
+  Swapper: '0x362051AeDA2Df55Ffa6CEFCEd3973d90a0891285',
+  FeeCollector: '0xaB8Ae06160b77D604EDEF7ec12D9f12DDeE7123f',
+  BtcOracle: '0xe2927A0620b82A66D67F678FC9b826B0E01B1bFD',
+} as const
+
 // Handler configurations
 export const HANDLERS = [
   {
