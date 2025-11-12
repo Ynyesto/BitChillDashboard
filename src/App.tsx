@@ -63,17 +63,24 @@ function App() {
                 </div>
                 <div className="value-medium">${item.tvlUsd.toFixed(2)}</div>
               </div>
-              {item.interestWithdrawn !== undefined && item.name.toLowerCase().includes('tropykus') &&  (
+              {item.interestGenerated !== undefined && (
                 <div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                    Interest withdrawn by users
+                    All-time generated interest
                   </div>
-                  <div className="value-medium" style={{ color: item.interestWithdrawn > 0 ? '#ff6b6b' : '#51cf66' }}>
-                    ${item.interestWithdrawn.toFixed(2)}
+                  <div
+                    className="value-medium"
+                    style={{ color: item.interestGenerated >= 0 ? '#51cf66' : '#ff6b6b' }}
+                  >
+                    ${item.interestGenerated.toFixed(2)}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                    {item.interestWithdrawn > 0 ? 'Deposit needed' : 'No deposit needed'}
-                  </div>
+                  {item.protocol === 'tropykus' && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                      {item.interestGenerated > 0
+                        ? 'Deposit this amount to match snapshot balance'
+                        : 'Snapshot already reflects current balance'}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

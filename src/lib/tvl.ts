@@ -12,13 +12,14 @@ export interface TvlResult {
   protocol: string
   tvlUsd: number
   underlyingUsd: number
-  interestWithdrawn?: number // Only for Tropykus (and potentially Sovryn)
+  interestGenerated?: number
 }
 
 export async function getHandlerTvl(handler: HandlerConfig): Promise<TvlResult> {
   const client = assertClient()
 
   let underlyingBalance = 0n
+  let interestGenerated: number | undefined
 
   if (handler.protocol === 'sovryn') {
     // Get asset balance and profit from iSUSD
@@ -37,7 +38,10 @@ export async function getHandlerTvl(handler: HandlerConfig): Promise<TvlResult> 
       }),
     ]) as [bigint, bigint]
     // Convert int256 to bigint and sum
-    underlyingBalance = BigInt(asset.toString()) + BigInt(profit.toString())
+    const assetBalance = BigInt(asset.toString())
+    const profitBalance = BigInt(profit.toString())
+    underlyingBalance = assetBalance + profitBalance
+    interestGenerated = Number(profitBalance) / 1e18
   } else if (handler.protocol === 'tropykus') {
     // Get all required data for Tropykus calculation
     const [kTokenBalance, exchangeRate, snapshot] = await Promise.all([
@@ -65,24 +69,10 @@ export async function getHandlerTvl(handler: HandlerConfig): Promise<TvlResult> 
     const realUnderlyingBalance = (kTokenBalance * exchangeRate) / BigInt(1e18)
     underlyingBalance = realUnderlyingBalance
     
-    // Calculate interest withdrawn: real_underlying - snapshot_underlying
-    const snapshotUnderlying = snapshot[1] // underlyingAmount is the second return value
-    const interestWithdrawn = realUnderlyingBalance - snapshotUnderlying
-    
-    // Convert to USD (divide by 1e18)
-    const tvlUsd = Number(underlyingBalance) / 1e18
-    const underlyingUsd = Number(underlyingBalance) / 1e18
-    const interestWithdrawnUsd = Number(interestWithdrawn) / 1e18
-
-    return {
-      handler: handler.address,
-      name: handler.name,
-      stablecoin: handler.stablecoin,
-      protocol: handler.protocol,
-      tvlUsd,
-      underlyingUsd,
-      interestWithdrawn: interestWithdrawnUsd,
-    }
+    // Calculate interest generated: real_underlying - snapshot_underlying
+    const snapshotUnderlying = snapshot[1] // underlyingAmount is the second return value, and it equals deposits - withdrawals of the underlying token
+    const interestDelta = realUnderlyingBalance - snapshotUnderlying
+    interestGenerated = Number(interestDelta) / 1e18
   }
 
   // Convert to USD (divide by 1e18)
@@ -96,6 +86,7 @@ export async function getHandlerTvl(handler: HandlerConfig): Promise<TvlResult> 
     protocol: handler.protocol,
     tvlUsd,
     underlyingUsd,
+    interestGenerated,
   }
 }
 
