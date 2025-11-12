@@ -68,52 +68,58 @@ function App() {
       )}
 
       <div className="card" style={{ marginBottom: '2rem' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>TVL</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Total TVL</h2>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div className="value-large">${formatNumber(totalTvl)}</div>
         </div>
         <div className="dashboard-grid">
-          {tvlData.map((item) => (
-            <div key={item.handler} className="card">
-              <h3>{item.name}</h3>
-              <div className="metrics-grid">
-                <div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                    Protocol
-                  </div>
-                  <span className={`protocol-badge protocol-${item.protocol}`}>
-                    {item.protocol}
-                  </span>
-                </div>
-                <div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                    Total TVL
-                  </div>
-                  <div className="value-medium">${formatNumber(item.tvlUsd)}</div>
-                </div>
-                {item.interestGenerated !== undefined && (
+          {tvlData.map((item) => {
+            const protocolBorderColor = item.protocol === 'sovryn' 
+              ? 'linear-gradient(135deg, #ff6b6b, #ee5a24)'
+              : 'linear-gradient(135deg, #4ecdc4, #44a08d)'
+            
+            return (
+              <div 
+                key={item.handler} 
+                className="card"
+                style={{
+                  borderLeft: '4px solid',
+                  borderImage: `${protocolBorderColor} 1`,
+                  borderImageSlice: 1,
+                }}
+              >
+                <h3>{item.name}</h3>
+                <div className="metrics-grid">
                   <div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                      All-time generated interest
+                      TVL
                     </div>
-                    <div
-                      className="value-medium"
-                      style={{ color: item.interestGenerated >= 0 ? '#51cf66' : '#ff6b6b' }}
-                    >
-                      ${formatNumber(item.interestGenerated)}
-                    </div>
+                    <div className="value-medium">${formatNumber(item.tvlUsd)}</div>
                   </div>
-                )}
-              </div>
-              <details>
-                <summary>Contract Addresses</summary>
-                <div>
-                  <div><strong>Handler:</strong> {item.handler}</div>
-                  <div><strong>Stablecoin:</strong> {item.stablecoin}</div>
+                  {item.interestGenerated !== undefined && (
+                    <div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+                        All-time generated interest
+                      </div>
+                      <div
+                        className="value-medium"
+                        style={{ color: item.interestGenerated >= 0 ? '#51cf66' : '#ff6b6b' }}
+                      >
+                        ${formatNumber(item.interestGenerated)}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </details>
-            </div>
-          ))}
+                <details>
+                  <summary>Contract Addresses</summary>
+                  <div>
+                    <div><strong>Handler:</strong> {item.handler}</div>
+                    <div><strong>Stablecoin:</strong> {item.stablecoin}</div>
+                  </div>
+                </details>
+              </div>
+            )
+          })}
         </div>
       </div>
 
