@@ -1,103 +1,232 @@
-# BitChill Dashboard - Add Balance Tracking Features
+# BitChill Dashboard Enhancements - TVL Evolution & Total Purchases
 
 ## Background and Motivation
 
-The user wants to add additional data visualizations to the BitChill dashboard:
-1. **Swapper RBTC Balance**: Display the RBTC (native Rootstock token) balance of the swapper address `0x362051Aeda2dF55fFa6CeFCEd3973D90a0891285`
-2. **Fee Collector Balances**: Display DOC and USDRIF token balances of the fee collector address `0xab8AE06160b77d604EDEf7eC12D9F12ddeE7123f`
-3. **Total USD Value**: Calculate and display the total USD value of fee collector balances assuming perfect 1:1 peg for both stablecoins
+The user wants to enhance the BitChill React dashboard with two new features:
+1. **TVL Evolution Graph**: A graph showing how Total Value Locked changes over time (since TVL decreases as stablecoins are spent to buy rBTC)
+2. **Total rBTC Purchases Card**: A card displaying the total amount in USD spent to buy rBTC since BitChill was launched
 
-This will help monitor the operational funds (swapper RBTC for gas) and collected fees.
+The dashboard currently:
+- Fetches real-time TVL data directly from blockchain using viem
+- Shows current TVL per handler, operational balances, and fee collector balances
+- Uses React + Vite + TypeScript
+
+The swapper-bot project:
+- Maintains a SQLite database (`dca_events.db`) on a remote server
+- Tracks all DCA events (created, updated, deleted)
+- Tracks swap transactions with purchase amounts
+- Has methods to query historical data
 
 ## Key Challenges and Analysis
 
-1. **RBTC Balance Fetching**: Need to use viem's `getBalance` function to fetch native RBTC balance (not an ERC20 token)
-2. **ERC20 Token Balances**: Need to call `balanceOf` on DOC and USDRIF token contracts for the fee collector address
-3. **Data Structure**: Create a new data structure to hold these balances separate from TVL data
-4. **UI Integration**: Add new cards/sections to display this information in a clear, consistent manner
-5. **Error Handling**: Ensure proper error handling for balance fetching operations
-6. **Refresh Functionality**: Include refresh capability for the new balance data
+### Data Availability
 
-**Technical Approach**:
-- Use `getBalance` from viem/actions for RBTC balance
-- Use `readContract` with ERC20 ABI for DOC and USDRIF balances
-- Create a new function similar to `getAllTvl` but for balances
-- Add new state management in App.tsx
-- Display in new card components following existing UI patterns
+**For TVL Evolution:**
+- Current TVL is calculated on-chain in real-time
+- Historical TVL data is NOT directly stored in the database
+- The database has:
+  - `dca_events` table: tracks deposits, withdrawals, schedule updates
+  - `user_dca_positions` table: current state of positions (but not historical snapshots)
+  - `swap_transactions` table: tracks purchases with timestamps and amounts
+
+**For Total rBTC Purchases:**
+- `swap_transactions` table has `total_purchase_amount` for each successful transaction
+- `swap_candidates` table has individual `purchase_amount` per user/schedule
+- Both have `timestamp` fields
+- Data is stored as strings (wei amounts) - need to convert to USD
+
+### Options for Implementation
+
+#### Option 1: REST API on Remote Server (Recommended)
+**Pros:**
+- Database is already on remote server
+- Can create efficient SQL queries for historical data
+- Can aggregate data server-side (better performance)
+- Can add caching if needed
+- Keeps database access secure
+
+**Cons:**
+- Need to set up API server (Express/Fastify)
+- Need to deploy and maintain API
+- Additional infrastructure
+
+**Implementation:**
+- Create Express/Fastify API in swapper-bot or separate service
+- Endpoints:
+  - `GET /api/tvl-evolution?startDate=&endDate=&granularity=day|week|month`
+  - `GET /api/total-purchases`
+- Calculate TVL evolution by:
+  - Starting from first deposit event
+  - Reconstructing TVL at each point by processing events chronologically
+  - Or: Use swap_transactions to track when purchases happened and subtract from deposits
+
+#### Option 2: Direct Database Access from Dashboard
+**Pros:**
+- No API needed
+- Simpler architecture
+
+**Cons:**
+- Security risk (exposing database directly)
+- SQLite doesn't work well over network
+- Would need to convert to PostgreSQL/MySQL or use SQLite over HTTP (not recommended)
+- CORS and authentication complexity
+
+#### Option 3: On-Chain Event Indexing
+**Pros:**
+- No dependency on database
+- Fully decentralized
+
+**Cons:**
+- Would need to index all historical events (expensive RPC calls)
+- Slow initial load
+- Complex to reconstruct historical TVL from events
+- Not practical for frequent updates
+
+### Recommended Approach: REST API
+
+**Architecture:**
+```
+Dashboard (React) 
+  ↓ HTTP
+REST API (Express/Fastify on remote server)
+  ↓ SQL Queries
+SQLite Database (dca_events.db)
+```
+
+**API Endpoints Needed:**
+
+1. **GET /api/tvl-evolution**
+   - Query params: `startDate`, `endDate`, `granularity` (day/week/month)
+   - Returns: Array of `{ timestamp: number, tvl: number }`
+   - Implementation: Reconstruct TVL by processing events chronologically
+
+2. **GET /api/total-purchases**
+   - Returns: `{ totalUsd: number, totalTransactions: number, lastPurchaseTimestamp?: number }`
+   - Implementation: Sum all successful `total_purchase_amount` from `swap_transactions`
+
+3. **GET /api/health** (optional)
+   - Health check endpoint
+
+**TVL Evolution Calculation Strategy:**
+
+Since we don't have historical TVL snapshots, we need to reconstruct it:
+
+1. **Method A: Event-Based Reconstruction**
+   - Get all events ordered by timestamp
+   - Start with TVL = 0
+   - For each event:
+     - `created`: TVL += depositAmount
+     - `updated`: TVL = updatedTokenBalance (if provided)
+     - `deleted`: TVL -= refundedAmount
+   - Track TVL at each timestamp
+   - Aggregate by granularity (day/week/month)
+
+2. **Method B: Current TVL - Purchases**
+   - Get current TVL from blockchain (already available)
+   - Get all swap transactions ordered by timestamp
+   - Calculate: Historical TVL = Current TVL + Sum of all purchases up to that point
+   - This assumes no withdrawals (which is tracked in events)
+
+**Best Approach: Hybrid**
+- Use Method A (event-based) for accuracy
+- Use swap_transactions to validate/cross-check
+- Handle edge cases (withdrawals, updates)
 
 ## High-level Task Breakdown
 
-- [ ] **Task 1**: Create balance fetching functions
-  - Success Criteria: Functions can fetch RBTC balance and ERC20 token balances
-  - Create `getSwapperBalance()` function to fetch RBTC balance
-  - Create `getFeeCollectorBalances()` function to fetch DOC and USDRIF balances
-  - Add proper TypeScript types for balance data
+### Phase 1: API Server Setup
+- [ ] Create API server structure in swapper-bot or new service
+- [ ] Set up Express/Fastify with TypeScript
+- [ ] Add CORS middleware
+- [ ] Add error handling middleware
+- [ ] Create database connection utility
+- [ ] Add health check endpoint
 
-- [ ] **Task 2**: Update config.ts with new addresses
-  - Success Criteria: Swapper and fee collector addresses are defined in config
-  - Add swapper address constant
-  - Add fee collector address constant
+### Phase 2: Total Purchases Endpoint
+- [ ] Create `GET /api/total-purchases` endpoint
+- [ ] Query `swap_transactions` for successful transactions
+- [ ] Sum `total_purchase_amount` (convert from wei to USD)
+- [ ] Return total in USD format
+- [ ] Test endpoint
 
-- [x] **Task 3**: Create balance data types and aggregation function
-  - Success Criteria: Type definitions exist and total USD calculation works
-  - Define `BalanceData` interface
-  - Create function to calculate total USD (DOC + USDRIF assuming 1:1 peg)
+### Phase 3: TVL Evolution Endpoint
+- [ ] Create `GET /api/tvl-evolution` endpoint
+- [ ] Implement event-based TVL reconstruction
+- [ ] Add granularity support (day/week/month)
+- [ ] Add date range filtering
+- [ ] Optimize query performance
+- [ ] Test with real data
 
-- [x] **Task 4**: Integrate balance fetching into App.tsx
-  - Success Criteria: Balance data loads and displays in UI
-  - Add state for balance data
-  - Add loading and error states
-  - Call balance functions on component mount and refresh
-  - Display swapper RBTC balance
-  - Display fee collector DOC, USDRIF, and total USD balances
+### Phase 4: Dashboard Integration
+- [ ] Add API client utility in dashboard
+- [ ] Install charting library (recharts, chart.js, or similar)
+- [ ] Create TVL Evolution graph component
+- [ ] Create Total Purchases card component
+- [ ] Integrate into App.tsx
+- [ ] Add loading states and error handling
+- [ ] Style components to match existing design
 
-- [x] **Task 5**: Style and layout the new balance cards
-  - Success Criteria: New cards match existing UI design and are responsive
-  - Add CSS styling for balance cards
-  - Ensure proper layout in dashboard grid
-  - Test responsive behavior
-
-- [x] **Task 6**: Test and verify
-  - Success Criteria: All balances display correctly and refresh works
-  - Test balance fetching with actual addresses
-  - Verify calculations are correct
-  - Test error handling
-  - Verify refresh functionality works
+### Phase 5: Testing & Deployment
+- [ ] Test API endpoints with real data
+- [ ] Test dashboard integration
+- [ ] Verify data accuracy
+- [ ] Deploy API to remote server
+- [ ] Update dashboard to use production API URL
+- [ ] Test end-to-end
 
 ## Project Status Board
 
-- [x] **Create balance fetching functions**: Implement getSwapperBalance and getFeeCollectorBalances
-- [x] **Update config.ts**: Add swapper and fee collector addresses
-- [x] **Create balance types**: Define BalanceData interface and calculation functions
-- [x] **Integrate into App.tsx**: Add state, fetching, and display logic
-- [x] **Style balance cards**: Match existing UI design
-- [x] **Test and verify**: Ensure all functionality works correctly
+- [x] Phase 1: API Server Setup ✅
+- [x] Phase 2: Total Purchases Endpoint ✅
+- [x] Phase 3: TVL Evolution Endpoint ✅
+- [x] Phase 4: Dashboard Integration ✅
+- [ ] Phase 5: Testing & Deployment (pending server deployment)
 
 ## Current Status / Progress Tracking
 
-**Current Status**: All tasks completed including latest enhancements
+**Status:** Implementation complete! Ready for testing and deployment.
 
-**Latest Updates (Second Round)**:
-1. ✅ Added BTC oracle price fetching functionality
-2. ✅ Integrated RBTC USD value calculation using oracle price
-3. ✅ Restructured UI: moved handler cards inside TVL card, renamed to "TVL"
-4. ✅ Removed refresh button as requested
-5. ✅ All linting checks pass
+**Completed:**
+- ✅ Express server with TypeScript
+- ✅ Database connection and query methods
+- ✅ Total purchases endpoint (`/api/total-purchases`)
+- ✅ TVL evolution endpoint (`/api/tvl-evolution`) with granularity support
+- ✅ Health check endpoint
+- ✅ CORS configuration
+- ✅ Error handling
+- ✅ Dashboard API client utility
+- ✅ TVL Evolution Graph component with recharts
+- ✅ Total Purchases Card component
+- ✅ Integration into App.tsx
 
-**Next Steps**: 
-- Manual testing recommended to verify oracle price fetching and USD calculations
-- Verify UI layout looks correct with nested handler cards
+**Next Steps:**
+1. ✅ Install dependencies in API project: `cd bitchill-api && npm install`
+2. ✅ Configure `.env` in API project (set DB_PATH and ALLOWED_ORIGIN) - DONE
+3. Deploy API to remote server (see DEPLOYMENT.md for options)
+4. Set GitHub secret `VITE_API_URL` with the public API URL
+5. Test API endpoints from server
+6. Push to main branch to trigger dashboard deployment
+7. Test end-to-end
+
+**Deployment Options:**
+- **Option 1**: Direct port exposure (simple, less secure)
+- **Option 2**: Nginx reverse proxy (recommended, more secure)
+- **Option 3**: PM2 for process management
+- **Option 4**: ngrok for testing (temporary URLs)
 
 ## Executor's Feedback or Assistance Requests
 
-All tasks completed successfully. Latest enhancements:
-- Oracle integration for BTC price (address: 0xe2927A0620b82A66D67F678FC9b826B0E01B1bFD)
-- RBTC balance now shows USD value using oracle price
-- UI restructured with handler cards nested inside TVL card
-- Refresh button removed as requested
-- All code passes linting
+**Decisions Made:**
+1. ✅ API server location: Same server as database (`/Users/antoniorodriguez-ynyesto/Proyectos personales/bitchill-api`)
+2. ✅ Port: 3000
+3. ✅ Authentication: Private API (CORS restricted to frontend origin)
+4. ✅ Charting library: recharts
+5. ✅ TVL granularity: Configurable (daily, weekly, monthly)
+
+**Status:** Starting implementation in Executor mode.
 
 ## Lessons
 
-- Use `getBalance` from viem/actions for native token balances (RBTC)
-- Use `
+- SQLite database stores amounts as strings (wei) - need conversion to USD
+- TVL evolution requires reconstruction from events since no historical snapshots exist
+- swap_transactions table has all purchase data needed for total purchases calculation

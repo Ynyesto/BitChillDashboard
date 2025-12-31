@@ -6,10 +6,9 @@ import {
   type OperationalBalancesResult,
 } from './lib/balances'
 import { ADDRESSES, TOKENS } from './lib/config'
-
-function formatNumber(num: number): string {
-  return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
+import { TvlEvolutionGraph } from './components/TvlEvolutionGraph'
+import { TotalPurchasesCard } from './components/TotalPurchasesCard'
+import { formatNumber } from './lib/utils'
 
 function formatToken(amount: number, decimals = 4): string {
   return amount.toLocaleString(undefined, {
@@ -123,44 +122,51 @@ function App() {
         </div>
       </div>
 
-      {operationalBalances && (
-        <div className="dashboard-grid" style={{ marginBottom: '2rem' }}>
-          <div className="card">
-            <h3>Swapper RBTC Balance</h3>
-            <div className="value-medium" style={{ marginTop: '1rem' }}>
-              {formatToken(operationalBalances.swapper.balanceRbtc, 6)} RBTC
+      <div style={{ marginBottom: '2rem' }}>
+        <TvlEvolutionGraph currentTvl={totalTvl} />
+      </div>
+
+      <div className="dashboard-grid" style={{ marginBottom: '2rem' }}>
+        <TotalPurchasesCard />
+        {operationalBalances && (
+          <>
+            <div className="card">
+              <h3>Swapper RBTC Balance</h3>
+              <div className="value-medium" style={{ marginTop: '1rem' }}>
+                {formatToken(operationalBalances.swapper.balanceRbtc, 6)} RBTC
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                ≈ ${formatNumber(operationalBalances.swapper.balanceUsd)}
+              </div>
             </div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-              ≈ ${formatNumber(operationalBalances.swapper.balanceUsd)}
-            </div>
-          </div>
-          <div className="card">
-            <h3>Fee Collector Balances</h3>
-            <div style={{ marginTop: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div>
-                  <div className="value-medium">
-                    {formatToken(operationalBalances.feeCollector.docBalance, 2)} DOC
+            <div className="card">
+              <h3>Fee Collector Balances</h3>
+              <div style={{ marginTop: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <div className="value-medium">
+                      {formatToken(operationalBalances.feeCollector.docBalance, 2)} DOC
+                    </div>
+                  </div>
+                  <div>
+                    <div className="value-medium">
+                      {formatToken(operationalBalances.feeCollector.usdrifBalance, 2)} USDRIF
+                    </div>
                   </div>
                 </div>
-                <div>
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+                    Total Income
+                  </div>
                   <div className="value-medium">
-                    {formatToken(operationalBalances.feeCollector.usdrifBalance, 2)} USDRIF
+                    ~${formatNumber(totalOperationalUsd)}
                   </div>
                 </div>
               </div>
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                  Total Income
-                </div>
-                <div className="value-medium">
-                  ~${formatNumber(totalOperationalUsd)}
-                </div>
-              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </>
   )
 }
