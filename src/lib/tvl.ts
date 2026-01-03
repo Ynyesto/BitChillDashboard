@@ -23,6 +23,8 @@ export async function getHandlerTvl(handler: HandlerConfig): Promise<TvlResult> 
 
   if (handler.protocol === 'sovryn') {
     // Get asset balance and profit from iSUSD
+    // assetBalanceOf returns the TVL (deposits made by users)
+    // profitOf returns the withdrawable interest/profit generated
     const [asset, profit] = await Promise.all([
       readContract(client, {
         address: handler.lendingToken as `0x${string}`,
@@ -37,10 +39,12 @@ export async function getHandlerTvl(handler: HandlerConfig): Promise<TvlResult> 
         args: [handler.address as `0x${string}`],
       }),
     ]) as [bigint, bigint]
-    // Convert int256 to bigint and sum
+    // Convert int256 to bigint (handle negative values if any)
     const assetBalance = BigInt(asset.toString())
     const profitBalance = BigInt(profit.toString())
-    underlyingBalance = assetBalance + profitBalance
+    // TVL = assetBalanceOf (deposits only, per Sovryn docs)
+    underlyingBalance = assetBalance
+    // Store withdrawable interest separately
     interestGenerated = Number(profitBalance) / 1e18
   } else if (handler.protocol === 'tropykus') {
     // Get all required data for Tropykus calculation

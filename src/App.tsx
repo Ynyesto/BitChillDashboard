@@ -99,7 +99,7 @@ function App() {
                   {item.interestGenerated !== undefined && (
                     <div>
                       <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                        All-time generated interest
+                        Withdrawable interest
                       </div>
                       <div
                         className="value-medium"

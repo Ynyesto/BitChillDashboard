@@ -21,6 +21,7 @@ npm run dev
 
 - Provide handler address, stablecoin address, and (if lending) the iSUSD or kToken address.
 - TVL calculation:
-  - Sovryn: assetBalanceOf(handler) + profitOf(handler)
+  - Sovryn: assetBalanceOf(handler) (TVL = deposits only, per Sovryn docs)
   - Tropykus: balanceOfUnderlying(handler)
   - Plain: stablecoin.balanceOf(handler)
+- Withdrawable interest (Sovryn only): profitOf(handler)
