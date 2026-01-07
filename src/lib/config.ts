@@ -19,7 +19,7 @@ export const TOKENS = {
 // Operational addresses
 export const ADDRESSES = {
   Swapper: '0x362051AeDA2Df55Ffa6CEFCEd3973d90a0891285',
-  FeeCollector: '0xaB8Ae06160b77D604EDEF7ec12D9f12DDeE7123f',
+  FeeCollector: '0x3caB92C050514A0368D71815CAc42ad746350F16',
   BtcOracle: '0xe2927A0620b82A66D67F678FC9b826B0E01B1bFD',
 } as const
 
